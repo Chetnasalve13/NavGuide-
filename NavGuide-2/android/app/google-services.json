@@ -1,0 +1,29 @@
+{
+  "project_info": {
+    "project_number": "63507132260",
+    "project_id": "navguide-3",
+    "storage_bucket": "navguide-3.appspot.com"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:63507132260:android:2aef590dc40a279461d471",
+        "android_client_info": {
+          "package_name": "com.example.navguide"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "AIzaSyBWmzpvXBTmAce2vMeD5xDrA1tu0ljHy4A"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

@@ -1,0 +1,367 @@
+import 'package:flutter/material.dart';
+
+class SavedRoutesPage extends StatefulWidget {
+  const SavedRoutesPage({Key? key}) : super(key: key);
+
+  @override
+  _SavedRoutesPageState createState() => _SavedRoutesPageState();
+}
+
+class _SavedRoutesPageState extends State<SavedRoutesPage> {
+  String? _selectedCurrentPosition;
+  String? _selectedDestination;
+  bool _startEnabled = false;
+  List<Offset> _finalPath = [];
+
+  // Sample positions for dropdowns
+  List<String> _positions = [
+    'Staff Room 1',
+    'Staff Room 2',
+    'HOD Cabin',
+    'Class 301',
+    'Class 302',
+    'Class 303',
+    'Lab A',
+    'Lab B',
+    'Lab C',
+    'Staircase 1',
+    'Staircase 2',
+    'Washroom 1',
+    'Washroom 2'
+  ];
+  List<String> _destinations = [
+    'Staff Room 1',
+    'Staff Room 2',
+    'HOD Cabin',
+    'Class 301',
+    'Class 302',
+    'Class 303',
+    'Lab A',
+    'Lab B',
+    'Lab C',
+    'Staircase 1',
+    'Staircase 2',
+    'Washroom 1',
+    'Washroom 2'
+  ];
+
+  // Single point for each room
+  final Map<String, Offset> _roomPoints = {
+    'Staff Room 1': Offset(335, 430),
+    'Staff Room 2': Offset(310, 420),
+    'HOD Cabin': Offset(710, 460),
+    'Class 301': Offset(395, 405),
+    'Class 302': Offset(370, 395),
+    'Class 303': Offset(715, 495),
+    'Lab A': Offset(625, 495),
+    'Lab B': Offset(600, 495),
+    'Lab C': Offset(645, 460),
+    'Lab D': Offset(435, 465),
+    'Staircase 1': Offset(820, 485),
+    'Staircase 2': Offset(160, 220),
+    'Washroom 1': Offset(835, 460),
+    'Washroom 2': Offset(250, 215),
+
+    // Add points for other rooms here
+  };
+
+  // Common pathway polyline
+  final List<Offset> _commonPathway = [
+    Offset(190, 220),
+    Offset(195, 235),
+    Offset(195, 250),
+    Offset(195, 325),
+    Offset(250, 375),
+    Offset(195, 250),
+    Offset(300, 390),
+    Offset(195, 250),
+    Offset(345, 410),
+    Offset(445, 410),
+    Offset(370, 415),
+    Offset(245, 410),
+    Offset(440, 440),
+    Offset(475, 450),
+    Offset(535, 475),
+    Offset(600, 475),
+    Offset(620, 480),
+    Offset(670, 475),
+    Offset(820, 475),
+    Offset(875, 475),
+    // Continue the pathway here...
+  ];
+
+  void _checkIfStartEnabled() {
+    if (_selectedCurrentPosition != null && _selectedDestination != null) {
+      setState(() {
+        _startEnabled = true;
+      });
+    }
+  }
+
+  Offset _getNearestPointOnPathway(Offset roomPoint) {
+    // Find the closest point on the common pathway to the given room point
+    double minDistance = double.infinity;
+    Offset nearestPoint = _commonPathway.first;
+
+    for (var point in _commonPathway) {
+      double distance = (roomPoint - point).distance;
+      if (distance < minDistance) {
+        minDistance = distance;
+        nearestPoint = point;
+      }
+    }
+    return nearestPoint;
+  }
+
+  void _startNavigation() {
+    if (_selectedCurrentPosition != null && _selectedDestination != null) {
+      setState(() {
+        // Clear previous path
+        _finalPath.clear();
+
+        // Get the start and end room points
+        Offset startRoomPoint = _roomPoints[_selectedCurrentPosition!]!;
+        Offset destinationRoomPoint = _roomPoints[_selectedDestination!]!;
+
+        // Find the nearest points on the common pathway
+        Offset startPathwayPoint = _getNearestPointOnPathway(startRoomPoint);
+        Offset destinationPathwayPoint =
+            _getNearestPointOnPathway(destinationRoomPoint);
+
+        // Build the final path
+        _finalPath.add(startRoomPoint); // Start from the room point
+        _finalPath.add(startPathwayPoint); // Connect to the common pathway
+
+        // Add the pathway itself between the start and destination pathway points
+        bool addPoints = false;
+        for (var point in _commonPathway) {
+          if (point == startPathwayPoint)
+            addPoints = true; // Start adding points from here
+          if (addPoints) _finalPath.add(point);
+          if (point == destinationPathwayPoint)
+            break; // Stop at the destination point
+        }
+
+        _finalPath
+            .add(destinationPathwayPoint); // Add the destination pathway point
+        _finalPath
+            .add(destinationRoomPoint); // End at the destination room point
+
+        // Navigate to the map view
+        Navigator.push(
+          context,
+          MaterialPageRoute(
+            builder: (context) => MapViewPage(waypoints: _finalPath),
+          ),
+        );
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Saved Routes'),
+        centerTitle: true,
+      ),
+      body: Padding(
+        padding: const EdgeInsets.all(16.0),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            const SizedBox(height: 20),
+            Text(
+              'Select your current position:',
+              style: TextStyle(fontSize: 18),
+            ),
+            DropdownButton<String>(
+              value: _selectedCurrentPosition,
+              items: _positions.map((String position) {
+                return DropdownMenuItem<String>(
+                  value: position,
+                  child: Text(position),
+                );
+              }).toList(),
+              onChanged: (value) {
+                setState(() {
+                  _selectedCurrentPosition = value;
+                });
+                _checkIfStartEnabled();
+              },
+              hint: Text('Select Current Position'),
+            ),
+            const SizedBox(height: 30),
+            Text(
+              'Select your destination:',
+              style: TextStyle(fontSize: 18),
+            ),
+            DropdownButton<String>(
+              value: _selectedDestination,
+              items: _destinations.map((String destination) {
+                return DropdownMenuItem<String>(
+                  value: destination,
+                  child: Text(destination),
+                );
+              }).toList(),
+              onChanged: (value) {
+                setState(() {
+                  _selectedDestination = value;
+                });
+                _checkIfStartEnabled();
+              },
+              hint: Text('Select Destination'),
+            ),
+            const SizedBox(height: 40),
+            ElevatedButton(
+              onPressed: _startEnabled ? _startNavigation : null,
+              child: Text('Start Navigation'),
+              style: ElevatedButton.styleFrom(
+                padding: EdgeInsets.symmetric(vertical: 16, horizontal: 24),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class MapViewPage extends StatefulWidget {
+  final List<Offset> waypoints;
+  final double originalImageWidth =
+      1024; // Replace with your actual image width
+  final double originalImageHeight =
+      768; // Replace with your actual image height
+
+  const MapViewPage({
+    Key? key,
+    required this.waypoints,
+  }) : super(key: key);
+
+  @override
+  _MapViewPageState createState() => _MapViewPageState();
+}
+
+class _MapViewPageState extends State<MapViewPage> {
+  Offset? _tappedPosition;
+
+  // Function to handle taps and store the tapped position
+  void _handleTap(TapUpDetails details, BuildContext context) {
+    // Get the RenderBox for the image to determine its size
+    final RenderBox box = context.findRenderObject() as RenderBox;
+    final Offset localPosition = box.globalToLocal(details.globalPosition);
+
+    // Get the size of the image displayed on the screen
+    final Size displayedSize = box.size;
+
+    // Scale the tapped position to match the original image size
+    final double scaleX = widget.originalImageWidth / displayedSize.width;
+    final double scaleY = widget.originalImageHeight / displayedSize.height;
+
+    // Adjust the local position to scale it according to the original image dimensions
+    final Offset scaledPosition = Offset(
+      localPosition.dx * scaleX,
+      localPosition.dy * scaleY,
+    );
+
+    setState(() {
+      _tappedPosition = scaledPosition;
+    });
+
+    print('Tapped position: $scaledPosition (scaled to original image)');
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      appBar: AppBar(
+        title: Text('Map View'),
+        centerTitle: true,
+      ),
+      body: LayoutBuilder(
+        builder: (context, constraints) {
+          return GestureDetector(
+            onTapUp: (details) =>
+                _handleTap(details, context), // Capture tap events
+            child: Stack(
+              children: [
+                Center(
+                  child: Image.asset(
+                    'assets/images/map.png', // Ensure this path matches your image location
+                    fit: BoxFit.contain,
+                    width: widget.originalImageWidth,
+                    height: widget.originalImageHeight,
+                  ),
+                ),
+                CustomPaint(
+                  size: Size(constraints.maxWidth, constraints.maxHeight),
+                  painter: MapPainter(
+                    waypoints: widget.waypoints,
+                    imageSize: Size(
+                        widget.originalImageWidth, widget.originalImageHeight),
+                    tappedPosition: _tappedPosition, // Pass the tapped position
+                  ),
+                ),
+              ],
+            ),
+          );
+        },
+      ),
+    );
+  }
+}
+
+class MapPainter extends CustomPainter {
+  final List<Offset> waypoints;
+  final Size imageSize;
+  final Offset? tappedPosition;
+
+  MapPainter({
+    required this.waypoints,
+    required this.imageSize,
+    this.tappedPosition,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final paint = Paint()
+      ..color = Colors.blue
+      ..strokeWidth = 4.0
+      ..style = PaintingStyle.stroke;
+
+    // Scaling factor based on the actual image and screen size
+    final double scaleX = size.width / imageSize.width;
+    final double scaleY = size.height / imageSize.height;
+
+    final scaledWaypoints = waypoints
+        .map((offset) => Offset(offset.dx * scaleX, offset.dy * scaleY))
+        .toList();
+
+    // Draw the polyline through all waypoints
+    for (int i = 0; i < scaledWaypoints.length - 1; i++) {
+      canvas.drawLine(scaledWaypoints[i], scaledWaypoints[i + 1], paint);
+    }
+
+    // Draw circles at each waypoint
+    final circlePaint = Paint()..color = Colors.red;
+    for (var waypoint in scaledWaypoints) {
+      canvas.drawCircle(waypoint, 10, circlePaint);
+    }
+
+    // If a tapped position is available, draw a green circle at the tapped position
+    if (tappedPosition != null) {
+      final tappedCirclePaint = Paint()..color = Colors.green;
+      final scaledTappedPosition = Offset(
+        tappedPosition!.dx * scaleX,
+        tappedPosition!.dy * scaleY,
+      );
+      canvas.drawCircle(scaledTappedPosition, 10, tappedCirclePaint);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant CustomPainter oldDelegate) {
+    return true; // Always repaint to reflect new tap position
+  }
+}
